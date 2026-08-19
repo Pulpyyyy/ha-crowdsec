@@ -50,7 +50,7 @@ The integration bundles a custom Lovelace card and registers it automatically â€
 type: custom:crowdsec-card
 ```
 
-The card shows the active bans as a list (flag, country, IP, scenario, time remaining) and as a world map colored by the number of bans per country, with a hover tooltip and click-to-filter. It follows the active Home Assistant theme (light and dark) automatically.
+The card shows the active bans as a list grouped by IP (flag, country, the aggregated scenarios, a Ã—N badge when an IP carries several bans, and the longest time remaining) and as a world map colored by the number of bans per country, with a hover tooltip and click-to-filter. It follows the active Home Assistant theme (light and dark) automatically.
 
 All options (also available in the visual card editor):
 
