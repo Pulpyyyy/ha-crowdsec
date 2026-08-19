@@ -25,6 +25,7 @@ const ZERO = { light: "#ececef", dark: "#2b2b2f" };
 const STRINGS = {
   fr: {
     subtitle: (b, i, p) => `${b} ban${b > 1 ? "s" : ""} actif${b > 1 ? "s" : ""} · ${i} IP · ${p} pays`,
+    manual: "manuel",
     remaining: "restant",
     top: "Top pays",
     empty: "Aucun ban actif",
@@ -36,6 +37,7 @@ const STRINGS = {
   },
   en: {
     subtitle: (b, i, p) => `${b} active ban${b > 1 ? "s" : ""} · ${i} IP${i > 1 ? "s" : ""} · ${p} countr${p > 1 ? "ies" : "y"}`,
+    manual: "manual",
     remaining: "left",
     top: "Top countries",
     empty: "No active ban",
@@ -240,6 +242,8 @@ class CrowdsecCard extends HTMLElement {
           color: var(--primary-text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chip { font-size: 10px; font-weight: 600; line-height: 16px; padding: 0 5px; border-radius: 8px;
           background: ${accentBg}; color: ${accent}; flex: 0 0 auto; }
+        .chip-alt { background: transparent; border: 1px solid var(--divider-color);
+          color: var(--secondary-text-color); line-height: 14px; font-weight: 500; }
         .row-sub { font-size: 11.5px; line-height: 1.35; color: var(--secondary-text-color); }
         .row-right { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; flex: 0 0 auto; }
         .left { font-size: 12.5px; font-weight: 500; color: var(--primary-text-color); }
@@ -305,7 +309,7 @@ class CrowdsecCard extends HTMLElement {
     for (const d of shown) {
       let g = byIp.get(d.value);
       if (!g) {
-        g = { value: d.value, country: d.country, scenarios: [], count: 0, remaining: null };
+        g = { value: d.value, country: d.country, scenarios: [], types: [], manual: false, count: 0, remaining: null };
         byIp.set(d.value, g);
         groups.push(g);
       }
@@ -313,6 +317,9 @@ class CrowdsecCard extends HTMLElement {
       if (!g.country && d.country) g.country = d.country;
       const sc = (d.scenario || "").split("/").pop();
       if (sc && !g.scenarios.includes(sc)) g.scenarios.push(sc);
+      // Every decision type gets its badge; manual (cscli) bans get one more.
+      if (d.type && !g.types.includes(d.type)) g.types.push(d.type);
+      if (d.origin === "cscli") g.manual = true;
       if (d._remaining !== null && (g.remaining === null || d._remaining > g.remaining)) g.remaining = d._remaining;
     }
     const rows = groups.length
@@ -328,6 +335,8 @@ class CrowdsecCard extends HTMLElement {
                 <div class="ip-line">
                   <span class="ip">${esc(g.value)}</span>
                   ${g.count > 1 ? `<span class="chip">×${g.count}</span>` : ""}
+                  ${g.types.map((ty) => `<span class="chip chip-alt">${esc(ty)}</span>`).join("")}
+                  ${g.manual ? `<span class="chip chip-alt">${t.manual}</span>` : ""}
                 </div>
                 <span class="row-sub">${esc(sub)}</span>
               </div>

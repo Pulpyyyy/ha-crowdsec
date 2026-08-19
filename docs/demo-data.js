@@ -65,14 +65,22 @@ export function generateDecisions(seed = 42) {
       // like real CrowdSec data - the card groups them.
       const value = lastIp && rnd() < 0.35 ? lastIp : `${prefix}.${1 + Math.floor(rnd() * 253)}`;
       lastIp = value;
+      // A couple of non-default cases so the card badges show up in captures:
+      // one captcha remediation and one manual cscli ban, with long durations
+      // so they sort near the top of the list.
+      const type = c.cc === "FR" && i === 0 ? "captcha" : "ban";
+      const origin = c.cc === "DE" && i === 0 ? "cscli" : "crowdsec";
+      let duration = `${h ? h + "h" : ""}${m}m${s}s`;
+      if (type === "captcha") duration = "4h30m0s";
+      if (origin === "cscli") duration = "23h59m30s";
       decisions.push({
         id: id++,
-        origin: "crowdsec",
+        origin,
         scope: "Ip",
-        type: "ban",
+        type,
         value,
-        scenario: SCENARIOS[Math.floor(rnd() * SCENARIOS.length)],
-        duration: `${h ? h + "h" : ""}${m}m${s}s`,
+        scenario: origin === "cscli" ? "manual" : SCENARIOS[Math.floor(rnd() * SCENARIOS.length)],
+        duration,
         country: c.cc,
         latitude: Math.round((c.lat + (rnd() - 0.5) * 6) * 100) / 100,
         longitude: Math.round((c.lon + (rnd() - 0.5) * 6) * 100) / 100,
