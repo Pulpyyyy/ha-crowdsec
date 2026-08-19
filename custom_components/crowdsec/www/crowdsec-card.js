@@ -272,9 +272,14 @@ class CrowdsecCard extends HTMLElement {
         .footer span { font-size: 11px; color: var(--secondary-text-color); opacity: 0.8; }
       </style>`;
 
-    const flag = (cc) =>
-      `<img class="flag" loading="lazy" src="https://flagcdn.com/w40/${esc(cc.toLowerCase())}.png"
-        alt="${esc(cc)}" onerror="this.outerHTML='<span class=&quot;flag-fallback&quot;>${esc(cc)}</span>'">`;
+    // Only well-formed ISO alpha-2 codes reach the img markup (and its inline
+    // onerror handler); anything else renders as an inert text chip.
+    const flag = (cc) => {
+      if (!/^[a-z]{2}$/i.test(cc || "")) return `<span class="flag-fallback">${esc(cc || "?")}</span>`;
+      const up = cc.toUpperCase();
+      return `<img class="flag" loading="lazy" src="https://flagcdn.com/w40/${cc.toLowerCase()}.png"
+        alt="${up}" onerror="this.outerHTML='<span class=&quot;flag-fallback&quot;>${up}</span>'">`;
+    };
 
     // An explicitly empty title (title: "") hides the whole header.
     const titleCfg = this._config.title;
@@ -299,7 +304,7 @@ class CrowdsecCard extends HTMLElement {
               .join(" · ");
             const rem = fmtRemaining(d._remaining);
             return `<div class="row">
-              ${cc ? flag(cc) : `<span class="flag-fallback">?</span>`}
+              ${flag(cc)}
               <div class="row-main">
                 <span class="ip">${esc(d.value)}</span>
                 <span class="row-sub">${esc(sub)}</span>
@@ -384,28 +389,37 @@ class CrowdsecCard extends HTMLElement {
     const root = this.shadowRoot;
     const wrap = root.querySelector(".map-wrap");
     if (!wrap) return;
+    const svg = wrap.querySelector("svg");
     const tooltip = wrap.querySelector(".tooltip");
     const t = this._t();
-    wrap.querySelectorAll("path").forEach((p) => {
-      p.addEventListener("mousemove", (ev) => {
-        const r = wrap.getBoundingClientRect();
-        const count = +p.dataset.count;
-        const name = p.dataset.cc ? this._countryName(p.dataset.cc) : p.dataset.n;
-        tooltip.innerHTML = `<b>${esc(name)}</b> <span>${esc(t.bans(count))}</span>`;
-        tooltip.style.display = "block";
-        const x = Math.min(ev.clientX - r.left + 12, r.width - tooltip.offsetWidth - 4);
-        tooltip.style.left = `${Math.max(0, x)}px`;
-        tooltip.style.top = `${ev.clientY - r.top - 30}px`;
-      });
-      p.addEventListener("mouseleave", () => {
+    // Delegated listeners: 3 on the svg instead of 3 per country path.
+    svg.addEventListener("mousemove", (ev) => {
+      const p = ev.target.closest("path");
+      if (!p) {
         tooltip.style.display = "none";
-      });
-      p.addEventListener("click", () => {
-        const cc = p.dataset.cc;
-        if (!cc || !+p.dataset.count) return;
-        this._filter = this._filter === cc ? null : cc;
-        this._invalidate();
-      });
+        return;
+      }
+      const r = wrap.getBoundingClientRect();
+      const count = +p.dataset.count;
+      const name = p.dataset.cc ? this._countryName(p.dataset.cc) : p.dataset.n;
+      tooltip.innerHTML = `<b>${esc(name)}</b> <span>${esc(t.bans(count))}</span>`;
+      tooltip.style.display = "block";
+      const x = Math.min(ev.clientX - r.left + 12, r.width - tooltip.offsetWidth - 4);
+      tooltip.style.left = `${Math.max(0, x)}px`;
+      // Flip below the pointer when there is no room above.
+      const y = ev.clientY - r.top - 30;
+      tooltip.style.top = `${y < 2 ? ev.clientY - r.top + 16 : y}px`;
+    });
+    svg.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+    svg.addEventListener("click", (ev) => {
+      const p = ev.target.closest("path");
+      if (!p) return;
+      const cc = p.dataset.cc;
+      if (!cc || !+p.dataset.count) return;
+      this._filter = this._filter === cc ? null : cc;
+      this._invalidate();
     });
   }
 }
