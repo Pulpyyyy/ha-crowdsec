@@ -59,6 +59,23 @@ All options (also available in the visual card editor):
 | `show_map` | `true` | Set to `false` to hide the map entirely. |
 | `palette` | `menace` | Map gradient: `menace` (red-orange), `ocean` (blue), `amethyste` (purple). |
 
+Full example with every option set:
+
+```yaml
+type: custom:crowdsec-card
+entity: sensor.crowdsec_active_decisions
+title: CrowdSec
+show_map: true
+palette: ocean
+```
+
+Compact list-only variant (for narrow columns):
+
+```yaml
+type: custom:crowdsec-card
+show_map: false
+```
+
 Notes: the world map (Natural Earth, 110m) is embedded in the card — no external requests; country flags are loaded from flagcdn.com and fall back to the country code when offline. The map shapes can be regenerated with `python tools/generate_world_map.py`.
 
 ## Usage
@@ -86,9 +103,9 @@ action:
 mode: single
 ```
 
-#### **Lovelace Dashboard Card**
+#### **Markdown Card (alternative)**
 
-You can easily display the list of active decisions on your dashboard using a Markdown card.
+If you prefer not to use the bundled `custom:crowdsec-card`, you can display the list of active decisions with a plain Markdown card.
 
 ```yaml
 type: markdown
