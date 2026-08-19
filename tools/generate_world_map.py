@@ -59,14 +59,25 @@ def main():
             pts.append((x * scale[0] + translate[0], y * scale[1] + translate[1]))
         arcs.append(pts)
 
-    def ring_points(idxs):
+    def ring_lonlat(idxs):
         pts = []
         for idx in idxs:
             a = arcs[~idx][::-1] if idx < 0 else arcs[idx]
             if pts:
                 a = a[1:]
             pts.extend(a)
-        return [project(lon, lat) for lon, lat in pts]
+        # Unwrap longitudes so rings crossing the antimeridian stay
+        # contiguous instead of drawing a band across the whole map.
+        unwrapped, prev = [], None
+        for lon, lat in pts:
+            if prev is not None:
+                while lon - prev > 180:
+                    lon -= 360
+                while lon - prev < -180:
+                    lon += 360
+            unwrapped.append((lon, lat))
+            prev = lon
+        return unwrapped
 
     def ring_area(pts):
         s = 0.0
@@ -94,12 +105,23 @@ def main():
         parts = []
         for poly in polys:
             for ring in poly:
-                pts = ring_points(ring)
-                if ring_area(pts) < 1.2:  # drop specks
-                    continue
-                p = ring_to_path(pts)
-                if p:
-                    parts.append(p)
+                lonlat = ring_lonlat(ring)
+                lons = [p[0] for p in lonlat]
+                # Unwrapped rings may extend past +/-180: also emit a copy
+                # shifted by 360 so the overflow shows on the other edge
+                # (the SVG viewBox clips whatever falls outside).
+                shifts = [0.0]
+                if max(lons) > 180:
+                    shifts.append(-360.0)
+                if min(lons) < -180:
+                    shifts.append(360.0)
+                for shift in shifts:
+                    pts = [project(lon + shift, lat) for lon, lat in lonlat]
+                    if ring_area(pts) < 1.2:  # drop specks
+                        continue
+                    p = ring_to_path(pts)
+                    if p:
+                        parts.append(p)
         if parts:
             code = num_to_a2.get(cid) or by_name.get(name, "")
             entries.append({"c": code, "n": name, "d": "".join(parts)})

@@ -42,6 +42,8 @@ After either installation method, **restart Home Assistant**.
 
 ## Lovelace Card
 
+![CrowdSec card, wide layout](images/hero-light.png)
+
 The integration bundles a custom Lovelace card and registers it automatically — nothing to install, no resource to declare (requires Home Assistant 2024.7 or newer; refresh your browser after the first restart). Minimal usage:
 
 ```yaml
@@ -76,7 +78,11 @@ type: custom:crowdsec-card
 show_map: false
 ```
 
-Notes: the world map (Natural Earth, 110m) is embedded in the card — no external requests; country flags are loaded from flagcdn.com and fall back to the country code when offline. The map shapes can be regenerated with `python tools/generate_world_map.py`.
+The three palettes, on the dark theme:
+
+![The three gradient palettes](images/palettes-dark.png)
+
+Notes: the world map (Natural Earth, 110m) is embedded in the card — no external requests; country flags are loaded from flagcdn.com and fall back to the country code when offline. The map shapes can be regenerated with `python tools/generate_world_map.py`; the screenshots come from `docs/screenshot-harness.html` (see `docs/CAPTURES.md`).
 
 ## Usage
 
