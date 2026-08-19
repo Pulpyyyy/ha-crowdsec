@@ -53,6 +53,7 @@ export function generateDecisions(seed = 42) {
   const decisions = [];
   let id = 1000;
   for (const c of SPEC) {
+    let lastIp = null;
     for (let i = 0; i < c.count; i++) {
       const prefix = c.prefixes[Math.floor(rnd() * c.prefixes.length)];
       const [asName, asNumber] = c.asns[Math.floor(rnd() * c.asns.length)];
@@ -60,12 +61,16 @@ export function generateDecisions(seed = 42) {
       const h = Math.floor(total / 3600);
       const m = Math.floor((total % 3600) / 60);
       const s = (total % 60) + Math.round(rnd() * 900) / 1000;
+      // Repeat offenders: some IPs carry several decisions (one per scenario),
+      // like real CrowdSec data - the card groups them.
+      const value = lastIp && rnd() < 0.35 ? lastIp : `${prefix}.${1 + Math.floor(rnd() * 253)}`;
+      lastIp = value;
       decisions.push({
         id: id++,
         origin: "crowdsec",
         scope: "Ip",
         type: "ban",
-        value: `${prefix}.${1 + Math.floor(rnd() * 253)}`,
+        value,
         scenario: SCENARIOS[Math.floor(rnd() * SCENARIOS.length)],
         duration: `${h ? h + "h" : ""}${m}m${s}s`,
         country: c.cc,

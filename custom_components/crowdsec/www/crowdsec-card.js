@@ -24,7 +24,7 @@ const ZERO = { light: "#ececef", dark: "#2b2b2f" };
 
 const STRINGS = {
   fr: {
-    subtitle: (n, p) => `${n} ban${n > 1 ? "s" : ""} actif${n > 1 ? "s" : ""} · ${p} pays`,
+    subtitle: (b, i, p) => `${b} ban${b > 1 ? "s" : ""} actif${b > 1 ? "s" : ""} · ${i} IP · ${p} pays`,
     remaining: "restant",
     top: "Top pays",
     empty: "Aucun ban actif",
@@ -35,7 +35,7 @@ const STRINGS = {
     legend20: "20 et +",
   },
   en: {
-    subtitle: (n, p) => `${n} active ban${n > 1 ? "s" : ""} · ${p} countr${p > 1 ? "ies" : "y"}`,
+    subtitle: (b, i, p) => `${b} active ban${b > 1 ? "s" : ""} · ${i} IP${i > 1 ? "s" : ""} · ${p} countr${p > 1 ? "ies" : "y"}`,
     remaining: "left",
     top: "Top countries",
     empty: "No active ban",
@@ -202,6 +202,7 @@ class CrowdsecCard extends HTMLElement {
       if (d.country) counts[d.country] = (counts[d.country] || 0) + 1;
     }
     const countryCount = Object.keys(counts).length;
+    const ipCount = new Set(decisions.map((d) => d.value)).size;
     const steps = (PALETTES[this._config.palette] || PALETTES.menace)[this._dark ? "dark" : "light"];
     const zero = ZERO[this._dark ? "dark" : "light"];
     const accent = steps[this._dark ? 4 : 3];
@@ -234,10 +235,12 @@ class CrowdsecCard extends HTMLElement {
           font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
           background: var(--secondary-background-color); color: var(--secondary-text-color); }
         .row-main { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+        .ip-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
         .ip { font-family: var(--code-font-family, ui-monospace, monospace); font-size: 13px; font-weight: 500;
           color: var(--primary-text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .row-sub { font-size: 11.5px; color: var(--secondary-text-color); white-space: nowrap; overflow: hidden;
-          text-overflow: ellipsis; }
+        .chip { font-size: 10px; font-weight: 600; line-height: 16px; padding: 0 5px; border-radius: 8px;
+          background: ${accentBg}; color: ${accent}; flex: 0 0 auto; }
+        .row-sub { font-size: 11.5px; line-height: 1.35; color: var(--secondary-text-color); }
         .row-right { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; flex: 0 0 auto; }
         .left { font-size: 12.5px; font-weight: 500; color: var(--primary-text-color); }
         .left-sub { font-size: 10.5px; color: var(--secondary-text-color); opacity: 0.8; }
@@ -290,23 +293,42 @@ class CrowdsecCard extends HTMLElement {
         <div class="icon-tile">${SHIELD}</div>
         <div class="titles">
           <span class="title">${esc(titleCfg || "CrowdSec")}</span>
-          <span class="subtitle">${esc(t.subtitle(decisions.length, countryCount))}</span>
+          <span class="subtitle">${esc(t.subtitle(decisions.length, ipCount, countryCount))}</span>
         </div>
       </div>`;
 
     const shown = this._filter ? decisions.filter((d) => d.country === this._filter) : decisions;
-    const rows = shown.length
-      ? `<div class="rows">${shown
-          .map((d) => {
-            const cc = d.country;
-            const sub = [cc ? this._countryName(cc) : null, (d.scenario || "").split("/").pop() || null]
+    // One row per IP: scenarios aggregated, longest remaining time kept.
+    // Input is sorted by remaining desc, so groups inherit that order.
+    const groups = [];
+    const byIp = new Map();
+    for (const d of shown) {
+      let g = byIp.get(d.value);
+      if (!g) {
+        g = { value: d.value, country: d.country, scenarios: [], count: 0, remaining: null };
+        byIp.set(d.value, g);
+        groups.push(g);
+      }
+      g.count += 1;
+      if (!g.country && d.country) g.country = d.country;
+      const sc = (d.scenario || "").split("/").pop();
+      if (sc && !g.scenarios.includes(sc)) g.scenarios.push(sc);
+      if (d._remaining !== null && (g.remaining === null || d._remaining > g.remaining)) g.remaining = d._remaining;
+    }
+    const rows = groups.length
+      ? `<div class="rows">${groups
+          .map((g) => {
+            const sub = [g.country ? this._countryName(g.country) : null, ...g.scenarios]
               .filter(Boolean)
               .join(" · ");
-            const rem = fmtRemaining(d._remaining);
+            const rem = fmtRemaining(g.remaining);
             return `<div class="row">
-              ${flag(cc)}
+              ${flag(g.country)}
               <div class="row-main">
-                <span class="ip">${esc(d.value)}</span>
+                <div class="ip-line">
+                  <span class="ip">${esc(g.value)}</span>
+                  ${g.count > 1 ? `<span class="chip">×${g.count}</span>` : ""}
+                </div>
                 <span class="row-sub">${esc(sub)}</span>
               </div>
               <div class="row-right">
