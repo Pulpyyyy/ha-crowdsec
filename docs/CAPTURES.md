@@ -17,7 +17,7 @@ chrome --headless=new --disable-gpu --allow-file-access-from-files \
 | Page | Contenu | Taille fenêtre |
 |---|---|---|
 | `hero` | carte large 2 colonnes (liste + mapmonde) | 940,515 |
-| `views` | `view: list` et `view: map` côte à côte (étroit) | 840,530 |
+| `views` | `view: auto` (empilée) et `view: map` côte à côte (étroit) | 840,700 |
 | `palettes` | les 3 palettes du dégradé, `view: map` | 1260,485 |
 | `compact` | `view: list`, liste seule | 460,475 |
 

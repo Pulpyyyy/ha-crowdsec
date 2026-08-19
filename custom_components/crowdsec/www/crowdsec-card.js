@@ -208,8 +208,7 @@ class CrowdsecCard extends HTMLElement {
     const accentBg = tint(accent, this._dark ? 0.14 : 0.12);
     const showMap = this._config.show_map !== false;
     const viewCfg = showMap ? this._config.view || "auto" : "list";
-    const wide = this._wide && viewCfg === "auto" && showMap;
-    const view = viewCfg === "map" ? "map" : "list";
+    const wide = this._wide && viewCfg === "auto";
 
     const style = `
       <style>
@@ -277,11 +276,15 @@ class CrowdsecCard extends HTMLElement {
       `<img class="flag" loading="lazy" src="https://flagcdn.com/w40/${esc(cc.toLowerCase())}.png"
         alt="${esc(cc)}" onerror="this.outerHTML='<span class=&quot;flag-fallback&quot;>${esc(cc)}</span>'">`;
 
-    const header = `
+    // An explicitly empty title (title: "") hides the whole header.
+    const titleCfg = this._config.title;
+    const header = titleCfg === "" || titleCfg === false || titleCfg === null
+      ? ""
+      : `
       <div class="header">
         <div class="icon-tile">${SHIELD}</div>
         <div class="titles">
-          <span class="title">${esc(this._config.title || "CrowdSec")}</span>
+          <span class="title">${esc(titleCfg || "CrowdSec")}</span>
           <span class="subtitle">${esc(t.subtitle(decisions.length, countryCount))}</span>
         </div>
       </div>`;
@@ -357,13 +360,21 @@ class CrowdsecCard extends HTMLElement {
       </div>`;
 
     const mapCol = `${mapSvg}${legend}${top}`;
-    const body = wide
-      ? `<div class="cols">
+    let body;
+    if (wide) {
+      body = `<div class="cols">
           <div class="col-list">${header}${rows}${footer}</div>
           <div class="vsep"></div>
           <div class="col-map">${mapCol}</div>
-        </div>`
-      : `${header}${view === "map" ? mapCol : rows}${view === "map" ? "" : footer}`;
+        </div>`;
+    } else if (viewCfg === "map") {
+      body = `${header}${mapCol}`;
+    } else if (viewCfg === "list") {
+      body = `${header}${rows}${footer}`;
+    } else {
+      // auto on a narrow column: map stacked above the list.
+      body = `${header}${mapSvg}${legend}${rows}${footer}`;
+    }
 
     this.shadowRoot.innerHTML = `${style}<ha-card>${body}</ha-card>`;
     this._wire();

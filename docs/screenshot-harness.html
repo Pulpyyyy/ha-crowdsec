@@ -114,7 +114,7 @@ function addCard(config, { width = 380, caption = null, swatch = null } = {}) {
 const PAGES = {
   hero: () => addCard({}, { width: 900 }),
   views: () => {
-    addCard({ view: "list" }, { caption: "view: list" });
+    addCard({}, { caption: "view: auto (colonne étroite)" });
     addCard({ view: "map" }, { caption: "view: map" });
   },
   palettes: () => {

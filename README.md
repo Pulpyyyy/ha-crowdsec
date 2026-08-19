@@ -57,8 +57,8 @@ All options (also available in the visual card editor):
 | Option | Default | Description |
 |:---|:---|:---|
 | `entity` | auto-detected | The CrowdSec decisions sensor. |
-| `title` | `CrowdSec` | Card title. |
-| `view` | `auto` | `auto` (list, plus the map side by side when the card is wide enough), `list` (list only), `map` (map only). |
+| `title` | `CrowdSec` | Card title. An explicitly empty title (`title: ""`) hides the header. |
+| `view` | `auto` | `auto` (map above the list on narrow columns, side by side when the card is wide enough), `list` (list only), `map` (map only). |
 | `palette` | `menace` | Map gradient: `menace` (red-orange), `ocean` (blue), `amethyste` (purple). |
 
 Full example with every option set:
