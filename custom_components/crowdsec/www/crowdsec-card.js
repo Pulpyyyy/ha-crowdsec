@@ -317,8 +317,8 @@ class CrowdsecCard extends HTMLElement {
       if (!g.country && d.country) g.country = d.country;
       const sc = (d.scenario || "").split("/").pop();
       if (sc && !g.scenarios.includes(sc)) g.scenarios.push(sc);
-      // Only non-default actions and manual bans earn a badge.
-      if (d.type && d.type !== "ban" && !g.types.includes(d.type)) g.types.push(d.type);
+      // Every decision type gets its badge; manual (cscli) bans get one more.
+      if (d.type && !g.types.includes(d.type)) g.types.push(d.type);
       if (d.origin === "cscli") g.manual = true;
       if (d._remaining !== null && (g.remaining === null || d._remaining > g.remaining)) g.remaining = d._remaining;
     }
