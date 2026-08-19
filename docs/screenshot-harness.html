@@ -93,7 +93,7 @@ const hass = {
   },
 };
 
-function addCard(config, { width = 380, view = null, caption = null, swatch = null } = {}) {
+function addCard(config, { width = 380, caption = null, swatch = null } = {}) {
   const cell = document.createElement("div");
   cell.className = "cell";
   cell.style.width = `${width}px`;
@@ -105,7 +105,6 @@ function addCard(config, { width = 380, view = null, caption = null, swatch = nu
   }
   const card = document.createElement("crowdsec-card");
   card.setConfig(config);
-  if (view) card._view = view; // vue initiale forcée pour la capture
   cell.appendChild(card);
   document.getElementById("stage").appendChild(cell);
   card.hass = hass;
@@ -115,15 +114,15 @@ function addCard(config, { width = 380, view = null, caption = null, swatch = nu
 const PAGES = {
   hero: () => addCard({}, { width: 900 }),
   views: () => {
-    addCard({}, { caption: "Vue Liste" });
-    addCard({}, { view: "map", caption: "Vue Carte" });
+    addCard({ view: "list" }, { caption: "view: list" });
+    addCard({ view: "map" }, { caption: "view: map" });
   },
   palettes: () => {
-    addCard({ palette: "menace" }, { view: "map", caption: "menace", swatch: "#a94e17" });
-    addCard({ palette: "ocean" }, { view: "map", caption: "océan", swatch: "#3f73b4" });
-    addCard({ palette: "amethyste" }, { view: "map", caption: "améthyste", swatch: "#8351b3" });
+    addCard({ palette: "menace", view: "map" }, { caption: "menace", swatch: "#a94e17" });
+    addCard({ palette: "ocean", view: "map" }, { caption: "océan", swatch: "#3f73b4" });
+    addCard({ palette: "amethyste", view: "map" }, { caption: "améthyste", swatch: "#8351b3" });
   },
-  compact: () => addCard({ show_map: false }, {}),
+  compact: () => addCard({ view: "list" }, {}),
 };
 (PAGES[page] || PAGES.hero)();
 </script>

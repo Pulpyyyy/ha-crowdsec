@@ -50,7 +50,7 @@ The integration bundles a custom Lovelace card and registers it automatically â€
 type: custom:crowdsec-card
 ```
 
-The card shows the active bans as a list (flag, country, IP, scenario, time remaining) and as a world map colored by the number of bans per country, with a hover tooltip and click-to-filter. On wide dashboards (panel/sections) it lays out list and map side by side; on narrow columns it becomes a List/Map toggle. It follows the active Home Assistant theme (light and dark) automatically.
+The card shows the active bans as a list (flag, country, IP, scenario, time remaining) and as a world map colored by the number of bans per country, with a hover tooltip and click-to-filter. It follows the active Home Assistant theme (light and dark) automatically.
 
 All options (also available in the visual card editor):
 
@@ -58,7 +58,7 @@ All options (also available in the visual card editor):
 |:---|:---|:---|
 | `entity` | auto-detected | The CrowdSec decisions sensor. |
 | `title` | `CrowdSec` | Card title. |
-| `show_map` | `true` | Set to `false` to hide the map entirely. |
+| `view` | `auto` | `auto` (list, plus the map side by side when the card is wide enough), `list` (list only), `map` (map only). |
 | `palette` | `menace` | Map gradient: `menace` (red-orange), `ocean` (blue), `amethyste` (purple). |
 
 Full example with every option set:
@@ -67,7 +67,7 @@ Full example with every option set:
 type: custom:crowdsec-card
 entity: sensor.crowdsec_active_decisions
 title: CrowdSec
-show_map: true
+view: auto
 palette: ocean
 ```
 
@@ -75,8 +75,10 @@ Compact list-only variant (for narrow columns):
 
 ```yaml
 type: custom:crowdsec-card
-show_map: false
+view: list
 ```
+
+(The former `show_map: false` option is still honored and behaves like `view: list`.)
 
 The three palettes, on the dark theme:
 

@@ -25,8 +25,6 @@ const ZERO = { light: "#ececef", dark: "#2b2b2f" };
 const STRINGS = {
   fr: {
     subtitle: (n, p) => `${n} ban${n > 1 ? "s" : ""} actif${n > 1 ? "s" : ""} · ${p} pays`,
-    list: "Liste",
-    map: "Carte",
     remaining: "restant",
     top: "Top pays",
     empty: "Aucun ban actif",
@@ -38,8 +36,6 @@ const STRINGS = {
   },
   en: {
     subtitle: (n, p) => `${n} active ban${n > 1 ? "s" : ""} · ${p} countr${p > 1 ? "ies" : "y"}`,
-    list: "List",
-    map: "Map",
     remaining: "left",
     top: "Top countries",
     empty: "No active ban",
@@ -93,8 +89,6 @@ function fireEvent(node, type, detail) {
 }
 
 const SHIELD = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"></path></svg>`;
-const ICON_LIST = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"></path></svg>`;
-const ICON_MAP = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"></path></svg>`;
 
 class CrowdsecCard extends HTMLElement {
   static getConfigElement() {
@@ -111,13 +105,12 @@ class CrowdsecCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._view = "list";
     this._filter = null;
     this._wide = false;
   }
 
   setConfig(config) {
-    this._config = { show_map: true, palette: "menace", ...config };
+    this._config = { show_map: true, palette: "menace", view: "auto", ...config };
     this._filter = null;
     this._invalidate();
   }
@@ -214,8 +207,9 @@ class CrowdsecCard extends HTMLElement {
     const accent = steps[this._dark ? 4 : 3];
     const accentBg = tint(accent, this._dark ? 0.14 : 0.12);
     const showMap = this._config.show_map !== false;
-    const wide = this._wide && showMap;
-    const view = !showMap ? "list" : this._view;
+    const viewCfg = showMap ? this._config.view || "auto" : "list";
+    const wide = this._wide && viewCfg === "auto" && showMap;
+    const view = viewCfg === "map" ? "map" : "list";
 
     const style = `
       <style>
@@ -232,12 +226,6 @@ class CrowdsecCard extends HTMLElement {
         .titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .title { font-size: 15px; font-weight: 500; color: var(--primary-text-color); }
         .subtitle { font-size: 12px; color: var(--secondary-text-color); }
-        .seg { display: flex; background: var(--secondary-background-color); border-radius: 10px; padding: 3px; gap: 3px; }
-        .seg button { flex: 1 1 0; height: 30px; border: none; border-radius: 8px; background: transparent;
-          display: flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: 13px;
-          font-weight: 500; color: var(--secondary-text-color); cursor: pointer; }
-        .seg button.on { background: var(--card-background-color); color: var(--primary-text-color);
-          box-shadow: 0 1px 2px rgba(0,0,0,0.18); }
         .rows { display: flex; flex-direction: column; max-height: 336px; overflow-y: auto; }
         .row { display: flex; align-items: center; gap: 12px; padding: 9px 2px; }
         .row + .row { border-top: 1px solid var(--divider-color); }
@@ -297,13 +285,6 @@ class CrowdsecCard extends HTMLElement {
           <span class="subtitle">${esc(t.subtitle(decisions.length, countryCount))}</span>
         </div>
       </div>`;
-
-    const seg = showMap && !wide
-      ? `<div class="seg">
-          <button class="${view === "list" ? "on" : ""}" data-view="list">${ICON_LIST}<span>${t.list}</span></button>
-          <button class="${view === "map" ? "on" : ""}" data-view="map">${ICON_MAP}<span>${t.map}</span></button>
-        </div>`
-      : "";
 
     const shown = this._filter ? decisions.filter((d) => d.country === this._filter) : decisions;
     const rows = shown.length
@@ -382,7 +363,7 @@ class CrowdsecCard extends HTMLElement {
           <div class="vsep"></div>
           <div class="col-map">${mapCol}</div>
         </div>`
-      : `${header}${seg}${view === "map" ? mapCol : rows}${view === "map" ? "" : footer}`;
+      : `${header}${view === "map" ? mapCol : rows}${view === "map" ? "" : footer}`;
 
     this.shadowRoot.innerHTML = `${style}<ha-card>${body}</ha-card>`;
     this._wire();
@@ -390,12 +371,6 @@ class CrowdsecCard extends HTMLElement {
 
   _wire() {
     const root = this.shadowRoot;
-    root.querySelectorAll(".seg button").forEach((b) =>
-      b.addEventListener("click", () => {
-        this._view = b.dataset.view;
-        this._invalidate();
-      })
-    );
     const wrap = root.querySelector(".map-wrap");
     if (!wrap) return;
     const tooltip = wrap.querySelector(".tooltip");
@@ -418,7 +393,6 @@ class CrowdsecCard extends HTMLElement {
         const cc = p.dataset.cc;
         if (!cc || !+p.dataset.count) return;
         this._filter = this._filter === cc ? null : cc;
-        if (!this._wide) this._view = "list";
         this._invalidate();
       });
     });
@@ -427,7 +401,7 @@ class CrowdsecCard extends HTMLElement {
 
 class CrowdsecCardEditor extends HTMLElement {
   setConfig(config) {
-    this._config = { show_map: true, palette: "menace", ...config };
+    this._config = { palette: "menace", view: "auto", ...config };
     this._render();
   }
 
@@ -440,7 +414,19 @@ class CrowdsecCardEditor extends HTMLElement {
     return [
       { name: "entity", selector: { entity: { domain: "sensor" } } },
       { name: "title", selector: { text: {} } },
-      { name: "show_map", selector: { boolean: {} } },
+      {
+        name: "view",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: "auto", label: fr ? "Automatique (liste + carte en large)" : "Automatic (list + map when wide)" },
+              { value: "list", label: fr ? "Liste seule" : "List only" },
+              { value: "map", label: fr ? "Carte seule" : "Map only" },
+            ],
+          },
+        },
+      },
       {
         name: "palette",
         selector: {
@@ -466,7 +452,7 @@ class CrowdsecCardEditor extends HTMLElement {
         ({
           entity: fr ? "Entité (auto-détectée si vide)" : "Entity (auto-detected if empty)",
           title: fr ? "Titre" : "Title",
-          show_map: fr ? "Afficher la carte du monde" : "Show the world map",
+          view: fr ? "Vue" : "View",
           palette: fr ? "Palette du dégradé" : "Gradient palette",
         }[s.name] || s.name);
       this._form.addEventListener("value-changed", (ev) => {
