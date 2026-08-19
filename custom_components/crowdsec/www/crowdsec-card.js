@@ -480,13 +480,19 @@ class CrowdsecCardEditor extends HTMLElement {
   }
 }
 
-customElements.define("crowdsec-card", CrowdsecCard);
-customElements.define("crowdsec-card-editor", CrowdsecCardEditor);
+/* Guarded: the module may be loaded twice (e.g. a manually added resource on
+ * top of the automatic registration) and define() must not throw. */
+if (!customElements.get("crowdsec-card")) {
+  customElements.define("crowdsec-card", CrowdsecCard);
+  customElements.define("crowdsec-card-editor", CrowdsecCardEditor);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "crowdsec-card",
-  name: "CrowdSec Card",
-  description: "Active CrowdSec bans: list with flags and a world map colored by bans per country.",
-  preview: true,
-});
+if (!window.customCards.some((c) => c.type === "crowdsec-card")) {
+  window.customCards.push({
+    type: "crowdsec-card",
+    name: "CrowdSec Card",
+    description: "Active CrowdSec bans: list with flags and a world map colored by bans per country.",
+    preview: true,
+  });
+}
