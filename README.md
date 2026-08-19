@@ -40,6 +40,27 @@ After either installation method, **restart Home Assistant**.
     -   **Scan Interval**: How often (in seconds) to check for new decisions.
 4.  Click **Submit**. The integration will be set up, and a sensor entity will be created.
 
+## Lovelace Card
+
+The integration bundles a custom Lovelace card and registers it automatically — nothing to install, no resource to declare (requires Home Assistant 2024.7 or newer; refresh your browser after the first restart). Minimal usage:
+
+```yaml
+type: custom:crowdsec-card
+```
+
+The card shows the active bans as a list (flag, country, IP, scenario, time remaining) and as a world map colored by the number of bans per country, with a hover tooltip and click-to-filter. On wide dashboards (panel/sections) it lays out list and map side by side; on narrow columns it becomes a List/Map toggle. It follows the active Home Assistant theme (light and dark) automatically.
+
+All options (also available in the visual card editor):
+
+| Option | Default | Description |
+|:---|:---|:---|
+| `entity` | auto-detected | The CrowdSec decisions sensor. |
+| `title` | `CrowdSec` | Card title. |
+| `show_map` | `true` | Set to `false` to hide the map entirely. |
+| `palette` | `menace` | Map gradient: `menace` (red-orange), `ocean` (blue), `amethyste` (purple). |
+
+Notes: the world map (Natural Earth, 110m) is embedded in the card — no external requests; country flags are loaded from flagcdn.com and fall back to the country code when offline. The map shapes can be regenerated with `python tools/generate_world_map.py`.
+
 ## Usage
 
 ### Automation Examples
