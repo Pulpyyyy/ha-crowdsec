@@ -30,7 +30,6 @@ const STRINGS = {
     top: "Top pays",
     empty: "Aucun ban actif",
     missing: (e) => `Entité introuvable : ${e}`,
-    source: "Géolocalisation ip-api.com",
     bans: (n) => `${n} ban${n > 1 ? "s" : ""}`,
     filterHint: "Cliquer sur un pays filtre la liste",
     legend20: "20 et +",
@@ -42,7 +41,6 @@ const STRINGS = {
     top: "Top countries",
     empty: "No active ban",
     missing: (e) => `Entity not found: ${e}`,
-    source: "Geolocation by ip-api.com",
     bans: (n) => `${n} ban${n > 1 ? "s" : ""}`,
     filterHint: "Click a country to filter the list",
     legend20: "20+",
@@ -274,9 +272,6 @@ class CrowdsecCard extends HTMLElement {
         .bar div { height: 4px; border-radius: 2px; background: ${steps[3]}; }
         .top-count { font-size: 12.5px; font-weight: 500; color: var(--primary-text-color); flex: 0 0 22px;
           text-align: right; }
-        .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px;
-          border-top: 1px solid var(--divider-color); }
-        .footer span { font-size: 11px; color: var(--secondary-text-color); opacity: 0.8; }
       </style>`;
 
     // Only well-formed ISO alpha-2 codes reach the img markup (and its inline
@@ -389,27 +384,21 @@ class CrowdsecCard extends HTMLElement {
         </div>`
       : "";
 
-    const footer = `
-      <div class="footer">
-        <span>${t.source}</span>
-        <span></span>
-      </div>`;
-
     const mapCol = `${mapSvg}${legend}${top}`;
     let body;
     if (wide) {
       body = `<div class="cols">
-          <div class="col-list">${header}${rows}${footer}</div>
+          <div class="col-list">${header}${rows}</div>
           <div class="vsep"></div>
           <div class="col-map">${mapCol}</div>
         </div>`;
     } else if (viewCfg === "map") {
       body = `${header}${mapCol}`;
     } else if (viewCfg === "list") {
-      body = `${header}${rows}${footer}`;
+      body = `${header}${rows}`;
     } else {
       // auto on a narrow column: map stacked above the list.
-      body = `${header}${mapSvg}${legend}${rows}${footer}`;
+      body = `${header}${mapSvg}${legend}${rows}`;
     }
 
     this.shadowRoot.innerHTML = `${style}<ha-card>${body}</ha-card>`;

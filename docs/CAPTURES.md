@@ -10,16 +10,16 @@ photographie chaque page :
 
 ```bash
 chrome --headless=new --disable-gpu --allow-file-access-from-files \
-  --hide-scrollbars --force-device-scale-factor=2 --window-size=940,515 \
+  --hide-scrollbars --force-device-scale-factor=2 --window-size=940,480 \
   --screenshot=hero-light.png "screenshot-harness.html?page=hero&mode=light"
 ```
 
 | Page | Contenu | Taille fenêtre |
 |---|---|---|
-| `hero` | carte large 2 colonnes (liste + mapmonde) | 940,515 |
-| `views` | `view: auto` (empilée) et `view: map` côte à côte (étroit) | 840,700 |
+| `hero` | carte large 2 colonnes (liste + mapmonde) | 940,480 |
+| `views` | `view: auto` (empilée) et `view: map` côte à côte (étroit) | 840,660 |
 | `palettes` | les 3 palettes du dégradé, `view: map` | 1260,485 |
-| `compact` | `view: list`, liste seule | 460,475 |
+| `compact` | `view: list`, liste seule | 460,440 |
 
 Chaque page existe en `mode=light` et `mode=dark` (`&lang=en` disponible).
 Les fichiers vont dans `images/` sous le nom `<page>-<mode>.png`.
