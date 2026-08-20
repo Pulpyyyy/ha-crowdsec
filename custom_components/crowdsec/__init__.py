@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import importlib
 import logging
-from pathlib import Path
 
-from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.loader import async_get_integration
 
 # Import your coordinator and API client
 from .sensor import CrowdSecCoordinator
-from .api import CrowdSecApiClient 
+from .api import CrowdSecApiClient
+from .frontend import JSModuleRegistration
 
 from .const import DOMAIN, CONF_SCHEME
 
@@ -22,57 +20,26 @@ PLATFORMS = ["sensor"]
 
 _LOGGER = logging.getLogger(__name__)
 
-CARD_URL_BASE = "/crowdsec-card"
-CARD_URL = f"{CARD_URL_BASE}/crowdsec-card.js"
 
+async def _async_setup_frontend(hass: HomeAssistant) -> None:
+    """Serve the bundled Lovelace card and declare its resource.
 
-async def _async_register_card(hass: HomeAssistant) -> None:
-    """Serve the bundled Lovelace card and register it as a frontend resource."""
-    if hass.data[DOMAIN].get("card_registered"):
+    Before EVENT_HOMEASSISTANT_STARTED the Lovelace resource collection
+    does not exist and a registration would be silently lost, so wait
+    for the start - unless Home Assistant is already running (an
+    installation made from the UI must show the card without a restart).
+    """
+    if hass.data[DOMAIN].get("frontend_registered"):
         return
-    hass.data[DOMAIN]["card_registered"] = True
+    hass.data[DOMAIN]["frontend_registered"] = True
 
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL_BASE, str(Path(__file__).parent / "www"), True)]
-    )
-    # Version query busts the browser cache when the integration is updated.
-    integration = await async_get_integration(hass, DOMAIN)
-    versioned_url = f"{CARD_URL}?v={integration.version}"
+    async def _register(_event=None) -> None:
+        await JSModuleRegistration(hass).async_register()
 
-    lovelace = hass.data.get("lovelace")
-    if isinstance(lovelace, dict):  # pre-2024 shape, kept for safety
-        mode = lovelace.get("mode")
-        resources = lovelace.get("resources")
+    if hass.state is CoreState.running:
+        await _register()
     else:
-        mode = getattr(lovelace, "mode", None)
-        resources = getattr(lovelace, "resources", None)
-
-    if mode == "storage" and resources is not None:
-        # Storage mode: create (or refresh) the entry in the Lovelace
-        # resources so the card shows up in Settings > Dashboards > Resources.
-        try:
-            await resources.async_get_info()  # ensure the store is loaded
-            existing = next(
-                (r for r in resources.async_items() if r["url"].startswith(CARD_URL)),
-                None,
-            )
-            if existing is None:
-                await resources.async_create_item(
-                    {"res_type": "module", "url": versioned_url}
-                )
-            elif existing["url"] != versioned_url:
-                await resources.async_update_item(
-                    existing["id"], {"url": versioned_url}
-                )
-            return
-        except Exception:  # noqa: BLE001 - never break setup over the card
-            _LOGGER.exception(
-                "Could not register the card in the Lovelace resources; "
-                "falling back to direct injection"
-            )
-
-    # YAML-mode dashboards (or failure above): inject the module directly.
-    add_extra_js_url(hass, versioned_url)
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _register)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -105,7 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
     # Make the bundled Lovelace card available (no manual resource needed).
-    await _async_register_card(hass)
+    await _async_setup_frontend(hass)
 
     # Pre-load the device_trigger platform to avoid blocking import.
     await hass.async_add_executor_job(
@@ -121,6 +88,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove the Lovelace resource along with the last entry."""
+    if hass.config_entries.async_entries(DOMAIN):
+        return
+    await JSModuleRegistration(hass).async_unregister()
 
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
